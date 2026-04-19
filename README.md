@@ -25,7 +25,7 @@ This repository provides a publication-ready baseline pipeline that:
 - **Target**: SARS-CoV-2 main protease (Mpro), PDB ID `6LU7`
 - **Ligands**: ChEMBL Mpro actives (`IC50 < 10 µM`) + ZINC15 drug-like decoys (`10k`)
 - Download commands are provided in:
-  - `/home/runner/work/alphafold/alphafold/data/download.sh`
+  - `data/download.sh`
 
 ## Quick start
 
@@ -53,4 +53,4 @@ tests/                       Focused unit tests
 
 ## Citation
 
-See `/home/runner/work/alphafold/alphafold/CITATION.cff`.
+See `CITATION.cff`.
