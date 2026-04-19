@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+title: "alphafold-vs-pipeline"
+message: "If you use this software, please cite it using the metadata and BibTeX below."
+type: software
+version: "0.1.0"
+license: "MIT"
+doi: "10.5281/zenodo.TBD"
+date-released: 2026-04-19
+authors:
+  - family-names: "Contributors"
+    given-names: "alphafold-vs-pipeline"
+preferred-citation:
+  type: article
+  title: "AlphaFold-guided virtual screening pipeline scaffold for rapid hit triage"
+  authors:
+    - family-names: "Contributors"
+      given-names: "alphafold-vs-pipeline"
+  year: 2026
+  doi: "10.5281/zenodo.TBD"
+  journal: "Zenodo"
+abstract: |
+  APA:
+  alphafold-vs-pipeline contributors. (2026). alphafold-vs-pipeline (v0.1.0) [Software].
+  Zenodo. https://doi.org/10.5281/zenodo.TBD
+
+  BibTeX:
+  @software{alphafold_vs_pipeline_2026,
+    title        = {alphafold-vs-pipeline},
+    author       = {{alphafold-vs-pipeline contributors}},
+    year         = {2026},
+    version      = {v0.1.0},
+    publisher    = {Zenodo},
+    doi          = {10.5281/zenodo.TBD},
+    url          = {https://doi.org/10.5281/zenodo.TBD}
+  }
