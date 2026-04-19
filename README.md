@@ -1,9 +1,19 @@
-# AlphaFold-Guided Virtual Screening Pipeline with Machine Learning Rescoring: A Reproducible, Config-Driven Framework for Academic Structure-Based Drug Discovery
+# AlphaFold-Guided Virtual Screening with Machine Learning Rescoring
 
 ## Abstract
-Structure-based virtual screening (SBVS) remains central to early drug discovery, but practical deployment is often constrained by limited access to high-resolution protein structures, uncertainty in docking-based affinity ranking, and weak reproducibility across computational environments. This repository presents a modular, configuration-driven SBVS framework that combines protein structure prediction (AlphaFold2/ColabFold/ESMFold-compatible logic), binding pocket prioritization, ligand preparation, molecular docking, machine-learning rescoring, ADMET triage, and interactive visualization into one transparent workflow. The novelty is systems-level: each stage is isolated, auditable, and replaceable while preserving end-to-end traceability from target definition to ranked hit export. The implementation in this repository is intentionally scaffolded for reproducible development, testing, and method communication, while the surrounding methodology supports extension to production-scale campaigns. We provide a benchmark-oriented protocol centered on SARS-CoV-2 Mpro (PDB: 6LU7), discuss expected metrics (ROC-AUC, EF<sub>1%</sub>, RMSD), and explicitly analyze known error sources including structure uncertainty, docking bias, overfitting, data leakage, and affinity-proxy mismatch. The document is written as a methods-oriented technical resource for postdoctoral applications, research portfolios, and preprint drafting.
+Structure-based virtual screening (SBVS) remains central to early drug discovery, but practical deployment is often constrained by limited access to high-resolution protein structures, uncertainty in docking-based affinity ranking, and weak reproducibility across computational environments.
+
+This repository presents a modular, configuration-driven SBVS framework that combines protein structure prediction (AlphaFold2/ColabFold/ESMFold-compatible logic), binding pocket prioritization, ligand preparation, molecular docking, machine-learning rescoring, ADMET triage, and interactive visualization into one transparent workflow. The novelty is systems-level: each stage is isolated, auditable, and replaceable while preserving end-to-end traceability from target definition to ranked hit export.
+
+The implementation in this repository is intentionally scaffolded for reproducible development, testing, and method communication, while the surrounding methodology supports extension to production-scale campaigns. We provide a benchmark-oriented protocol centered on SARS-CoV-2 Mpro (PDB: 6LU7), discuss expected metrics (ROC-AUC, EF<sub>1%</sub>, RMSD), and explicitly analyze known error sources including structure uncertainty, docking bias, overfitting, data leakage, and affinity-proxy mismatch.
 
 **Keywords:** Structure-based drug discovery, molecular docking, AlphaFold, machine learning rescoring, SBVS, protein structure prediction, cheminformatics
+
+---
+
+## Scope and Implementation Status (Important)
+
+This repository currently provides a **deterministic scaffold and educational reference implementation** (including dry-run mode), not a fully productionized HTVS platform. The scientific framework documented below is intentionally broader than the present mock-data execution path and is designed to support rigorous extension into real-world campaigns.
 
 ---
 
@@ -68,7 +78,7 @@ Input target + YAML config
 ```
 
 ### 2.2 Implemented stage order in code
-The orchestrator (`/home/runner/work/alphafold/alphafold/src/alphafold_vs_pipeline/pipeline.py`) executes:
+The orchestrator (`src/alphafold_vs_pipeline/pipeline.py`) executes:
 
 ```python
 structure_info = prepare_structure(config["target"])
@@ -83,7 +93,7 @@ ranked = rank_and_export(passed, config["ranking"], out_dir)
 This explicit order provides transparent information flow and stage-level testability.
 
 ### 2.3 Configuration-driven parameterization
-All major decisions are controlled in YAML (`/home/runner/work/alphafold/alphafold/configs/pipeline.yaml`), including predictor, pocket tools, docking engine, and ADMET thresholds.
+All major decisions are controlled in YAML (`configs/pipeline.yaml`), including predictor, pocket tools, docking engine, and ADMET thresholds.
 
 ```yaml
 target:
@@ -116,7 +126,7 @@ rescoring:
 ### 3.1 Install
 
 ```bash
-cd /home/runner/work/alphafold/alphafold
+cd <repository_root>
 pip install -e .
 ```
 
@@ -323,7 +333,7 @@ Remove compounds unlikely to survive medicinal chemistry and translational filte
 Provide interpretable, reproducible outputs suitable for decision meetings and downstream assay planning.
 
 ### Streamlit dashboard in this repository
-`/home/runner/work/alphafold/alphafold/dashboard/app.py` shows:
+`dashboard/app.py` shows:
 - run metadata summary,
 - 3D scatter (docking score vs ML score),
 - downloadable JSON hit export.
@@ -502,13 +512,13 @@ Add dynamic pocket discovery and non-orthosteric intervention workflows.
 ## 10) Reproducibility and Engineering Design
 
 ### 10.1 Stage modularity in repository
-- `/home/runner/work/alphafold/alphafold/src/alphafold_vs_pipeline/stages/structure.py`
-- `/home/runner/work/alphafold/alphafold/src/alphafold_vs_pipeline/stages/pockets.py`
-- `/home/runner/work/alphafold/alphafold/src/alphafold_vs_pipeline/stages/libraries.py`
-- `/home/runner/work/alphafold/alphafold/src/alphafold_vs_pipeline/stages/docking.py`
-- `/home/runner/work/alphafold/alphafold/src/alphafold_vs_pipeline/stages/rescoring.py`
-- `/home/runner/work/alphafold/alphafold/src/alphafold_vs_pipeline/stages/admet.py`
-- `/home/runner/work/alphafold/alphafold/src/alphafold_vs_pipeline/stages/ranking.py`
+- `src/alphafold_vs_pipeline/stages/structure.py`
+- `src/alphafold_vs_pipeline/stages/pockets.py`
+- `src/alphafold_vs_pipeline/stages/libraries.py`
+- `src/alphafold_vs_pipeline/stages/docking.py`
+- `src/alphafold_vs_pipeline/stages/rescoring.py`
+- `src/alphafold_vs_pipeline/stages/admet.py`
+- `src/alphafold_vs_pipeline/stages/ranking.py`
 
 ### 10.2 Config as experimental contract
 All key hyperparameters are in YAML and version-controlled for auditability.
@@ -880,10 +890,10 @@ This separation improves transparency and strengthens scientific credibility.
 
 ## 20) Repository Citation
 
-Please use `/home/runner/work/alphafold/alphafold/CITATION.cff` for software citation metadata.
+Please use `CITATION.cff` for software citation metadata.
 
 ---
 
 ## 21) Scope Note
 
-This repository currently provides a **deterministic scaffold and educational reference implementation** (including dry-run mode), not a fully productionized HTVS platform. The scientific framework documented above is intentionally broader than the present mock-data path and is designed to support rigorous extension into real-world campaigns.
+See **Scope and Implementation Status (Important)** near the top of this document.
