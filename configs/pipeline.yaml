@@ -1,0 +1,49 @@
+project:
+  name: alphafold-vs-pipeline
+  version: v0.1.0
+
+target:
+  name: SARS-CoV-2 Mpro
+  pdb_id: 6LU7
+  structure_source: provided
+  structure_path: data/raw/6LU7.pdb
+  predictor: colabfold
+
+pocket_detection:
+  tools:
+    - fpocket
+    - dogsitescorer
+  top_n: 3
+
+library:
+  actives_source: chembl
+  decoys_source: zinc15
+  zinc_decoy_count: 10000
+
+docking:
+  engine: vina
+  alternatives:
+    - smina
+    - gnina
+  exhaustiveness: 8
+  num_modes: 10
+
+rescoring:
+  model_type: lightgbm
+  feature_set: rf_score_plus_custom
+  model_path: models/lightgbm_rescorer.txt
+
+admet:
+  max_mw: 500
+  max_logp: 5
+  max_hbd: 5
+  max_hba: 10
+  pains_filter: true
+  external_tools:
+    - swissadme
+    - pkcsm
+
+ranking:
+  top_k: 100
+  export_csv: true
+  export_sdf: true
