@@ -1,2 +1,0 @@
-[console_scripts]
-alphafold-vs = alphafold_vs_pipeline.cli:main
