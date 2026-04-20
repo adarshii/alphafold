@@ -155,6 +155,9 @@ alphafold-vs run --config configs/pipeline.yaml --output outputs/demo --dry-run
 streamlit run dashboard/app.py
 ```
 
+The dashboard defaults to bundled sample data at `dashboard/demo_summary.json`.  
+To view a run output instead, set the sidebar path to `outputs/demo/summary.json`.
+
 ---
 
 ## 4) Module-Wise Deep Explanation
@@ -601,6 +604,8 @@ Run:
 alphafold-vs run --config configs/pipeline.yaml --output outputs/demo --dry-run
 streamlit run dashboard/app.py
 ```
+
+Then set the dashboard sidebar path to `outputs/demo/summary.json`.
 
 ### 13.3 Unstable rankings across runs
 - Fix seeds

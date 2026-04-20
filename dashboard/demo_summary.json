@@ -1,0 +1,77 @@
+{
+  "target": "SARS-CoV-2 Mpro",
+  "target_pdb_id": "6LU7",
+  "structure": {
+    "source": "provided",
+    "predictor": "colabfold",
+    "structure_path": "data/raw/6LU7.pdb",
+    "supported_predictors": [
+      "alphafold2",
+      "esmfold",
+      "colabfold"
+    ]
+  },
+  "pockets": [
+    {
+      "id": "P1",
+      "tool": "fpocket",
+      "score": 0.9
+    },
+    {
+      "id": "P2",
+      "tool": "dogsitescorer",
+      "score": 0.8
+    }
+  ],
+  "hits": [
+    {
+      "compound_id": "CHEMBL_A2",
+      "smiles": "CCN(CC)CC",
+      "mw": 101.2,
+      "logp": 1.3,
+      "hbd": 0,
+      "hba": 1,
+      "pains": false,
+      "docking_score": -9.491,
+      "rf_score_features": {
+        "hbonds": 1,
+        "hydrophobics": 2,
+        "metal_contacts": 0
+      },
+      "ml_rescore": -10.915
+    },
+    {
+      "compound_id": "CHEMBL_A1",
+      "smiles": "CCO",
+      "mw": 46.1,
+      "logp": -0.3,
+      "hbd": 1,
+      "hba": 1,
+      "pains": false,
+      "docking_score": -8.304,
+      "rf_score_features": {
+        "hbonds": 1,
+        "hydrophobics": 2,
+        "metal_contacts": 0
+      },
+      "ml_rescore": -9.55
+    },
+    {
+      "compound_id": "ZINC_D1",
+      "smiles": "c1ccccc1",
+      "mw": 78.1,
+      "logp": 2.1,
+      "hbd": 0,
+      "hba": 0,
+      "pains": false,
+      "docking_score": -6.643,
+      "rf_score_features": {
+        "hbonds": 1,
+        "hydrophobics": 2,
+        "metal_contacts": 0
+      },
+      "ml_rescore": -7.639
+    }
+  ],
+  "mode": "dry-run"
+}
