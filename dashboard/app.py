@@ -18,6 +18,21 @@ def discover_summary_paths(root: Path) -> list[str]:
     return [str(p) for p in candidates if p.is_file()]
 
 
+def normalize_summary_data(raw_data: Any) -> dict[str, Any]:
+    if isinstance(raw_data, dict):
+        return raw_data
+    if isinstance(raw_data, list) and all(isinstance(item, dict) for item in raw_data):
+        return {
+            "target": "N/A",
+            "target_pdb_id": "N/A",
+            "structure": {},
+            "pockets": [],
+            "hits": raw_data,
+            "mode": "uploaded-hits-only",
+        }
+    raise ValueError("Unsupported JSON format. Upload a summary object or a list of hit objects.")
+
+
 repo_root = Path.cwd()
 detected_paths = discover_summary_paths(repo_root)
 
@@ -32,8 +47,9 @@ summary_path = st.sidebar.selectbox(
 manual_path = st.sidebar.text_input("Or enter summary JSON path", summary_path)
 
 data: dict[str, Any]
+raw_data: Any
 if uploaded_file is not None:
-    data = json.load(uploaded_file)
+    raw_data = json.load(uploaded_file)
 else:
     path = Path(manual_path.strip())
     if not manual_path.strip() or not path.exists():
@@ -43,10 +59,20 @@ else:
             "then use `outputs/run_01/summary.json`."
         )
         st.stop()
-    data = json.loads(path.read_text(encoding="utf-8"))
+    raw_data = json.loads(path.read_text(encoding="utf-8"))
+
+try:
+    data = normalize_summary_data(raw_data)
+except ValueError as exc:
+    st.error(str(exc))
+    st.stop()
 
 hits = data.get("hits", [])
 pockets = data.get("pockets", [])
+if not isinstance(hits, list):
+    hits = []
+if not isinstance(pockets, list):
+    pockets = []
 
 st.subheader("Run summary")
 col1, col2, col3, col4 = st.columns(4)
