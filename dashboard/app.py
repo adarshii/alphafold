@@ -19,8 +19,22 @@ def discover_summary_paths(root: Path) -> list[str]:
 
 
 def normalize_summary_data(raw_data: Any) -> dict[str, Any]:
+    """Normalize uploaded/loaded JSON into a dashboard-compatible summary dict.
+
+    Accepts either:
+    - a summary object (dict), where missing/non-list `hits` and `pockets` are coerced to lists
+    - a list of hit objects, wrapped into a minimal summary payload
+
+    Raises:
+        ValueError: If the JSON shape is neither a summary object nor a list of hit objects.
+    """
     if isinstance(raw_data, dict):
-        return raw_data
+        normalized = dict(raw_data)
+        if not isinstance(normalized.get("hits"), list):
+            normalized["hits"] = []
+        if not isinstance(normalized.get("pockets"), list):
+            normalized["pockets"] = []
+        return normalized
     if isinstance(raw_data, list) and all(isinstance(item, dict) for item in raw_data):
         return {
             "target": "N/A",
@@ -69,10 +83,6 @@ except ValueError as exc:
 
 hits = data.get("hits", [])
 pockets = data.get("pockets", [])
-if not isinstance(hits, list):
-    hits = []
-if not isinstance(pockets, list):
-    pockets = []
 
 st.subheader("Run summary")
 col1, col2, col3, col4 = st.columns(4)
