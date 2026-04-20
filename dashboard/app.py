@@ -71,7 +71,7 @@ if hits:
     top_n = filters[0].slider("Rows to display", min_value=1, max_value=len(hits_df), value=min(25, len(hits_df)))
     sort_col_default = score_col if score_col else sortable_columns[0]
     sort_col = filters[1].selectbox("Sort by", sortable_columns, index=sortable_columns.index(sort_col_default))
-    ascending = filters[2].toggle("Ascending order", value=True)
+    ascending = filters[2].toggle("Sort ascending", value=True)
 
     filtered_df = hits_df.sort_values(by=sort_col, ascending=ascending).head(top_n)
     st.dataframe(filtered_df, width="stretch", hide_index=True)
@@ -84,5 +84,10 @@ if hits:
         hover_name="compound_id",
         title="Pose ranking (3D view)",
     )
-    st.plotly_chart(fig, width="stretch")
-    st.download_button("Download filtered hits (JSON)", data=filtered_df.to_json(orient="records", indent=2), file_name="hits.json")
+    fig.update_layout(autosize=True)
+    st.plotly_chart(fig)
+    st.download_button(
+        "Download filtered hits (JSON)",
+        data=json.dumps(filtered_df.to_dict(orient="records"), indent=2),
+        file_name="hits.json",
+    )
