@@ -11,6 +11,7 @@ import streamlit as st
 
 st.set_page_config(page_title="alphafold-vs-pipeline", layout="wide")
 st.title("AlphaFold-guided virtual screening dashboard")
+PLACEHOLDER_VALUE = "N/A"
 
 
 def discover_summary_paths(root: Path) -> list[str]:
@@ -35,10 +36,11 @@ def normalize_summary_data(raw_data: Any) -> dict[str, Any]:
         if not isinstance(normalized.get("pockets"), list):
             normalized["pockets"] = []
         return normalized
+    # Intentionally validate every row so downstream table/plot code only sees dict-like hit records.
     if isinstance(raw_data, list) and all(isinstance(item, dict) for item in raw_data):
         return {
-            "target": "N/A",
-            "target_pdb_id": "N/A",
+            "target": PLACEHOLDER_VALUE,
+            "target_pdb_id": PLACEHOLDER_VALUE,
             "structure": {},
             "pockets": [],
             "hits": raw_data,
@@ -86,11 +88,11 @@ pockets = data.get("pockets", [])
 
 st.subheader("Run summary")
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Target", str(data.get("target", "N/A")))
-col2.metric("PDB ID", str(data.get("target_pdb_id", "N/A")))
+col1.metric("Target", str(data.get("target", PLACEHOLDER_VALUE)))
+col2.metric("PDB ID", str(data.get("target_pdb_id", PLACEHOLDER_VALUE)))
 col3.metric("Pocket count", len(pockets))
 col4.metric("Hit count", len(hits))
-st.caption(f"Run mode: {data.get('mode', 'N/A')}")
+st.caption(f"Run mode: {data.get('mode', PLACEHOLDER_VALUE)}")
 
 if pockets:
     st.subheader("Pocket summary")
