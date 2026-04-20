@@ -71,7 +71,7 @@ if hits:
     top_n = filters[0].slider("Rows to display", min_value=1, max_value=len(hits_df), value=min(25, len(hits_df)))
     sort_col_default = score_col if score_col else sortable_columns[0]
     sort_col = filters[1].selectbox("Sort by", sortable_columns, index=sortable_columns.index(sort_col_default))
-    default_ascending = True if sort_col in {"docking_score", "ml_rescore"} else False
+    default_ascending = sort_col in {"docking_score", "ml_rescore"}
     ascending = filters[2].toggle("Sort ascending", value=default_ascending)
 
     filtered_df = hits_df.sort_values(by=sort_col, ascending=ascending).head(top_n)
@@ -82,7 +82,7 @@ if hits:
             filtered_df,
             x="docking_score",
             y="ml_rescore",
-            z=[i + 1 for i in range(len(filtered_df))],
+            z=list(range(1, len(filtered_df) + 1)),
             hover_name="compound_id",
             title="Pose ranking (3D view)",
         )
