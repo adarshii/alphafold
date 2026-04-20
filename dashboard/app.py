@@ -26,6 +26,10 @@ def normalize_summary_data(raw_data: Any) -> dict[str, Any]:
     - a summary object (dict), where missing/non-list `hits` and `pockets` are coerced to lists
     - a list of hit objects, wrapped into a minimal summary payload
 
+    Returns:
+        dict[str, Any]: Normalized summary payload with at least `target`, `target_pdb_id`,
+        `pockets`, and `hits`; includes `mode` for list-based uploaded hit payloads.
+
     Raises:
         ValueError: If the JSON shape is neither a summary object nor a list of hit objects.
     """
@@ -41,6 +45,7 @@ def normalize_summary_data(raw_data: Any) -> dict[str, Any]:
         return {
             "target": PLACEHOLDER_VALUE,
             "target_pdb_id": PLACEHOLDER_VALUE,
+            # Keep structure key present to match summary.json shape used across the app/docs.
             "structure": {},
             "pockets": [],
             "hits": raw_data,
