@@ -10,11 +10,15 @@ import streamlit as st
 st.set_page_config(page_title="alphafold-vs-pipeline", layout="wide")
 st.title("AlphaFold-guided virtual screening dashboard")
 
-summary_path = st.sidebar.text_input("Summary JSON path", "outputs/demo/summary.json")
+summary_path = st.sidebar.text_input("Summary JSON path", "dashboard/demo_summary.json")
 path = Path(summary_path)
 
 if not path.exists():
-    st.info("Run `alphafold-vs run --config configs/pipeline.yaml --output outputs/demo --dry-run` first.")
+    st.info(
+        "Use bundled `dashboard/demo_summary.json` or run "
+        "`alphafold-vs run --config configs/pipeline.yaml --output outputs/demo --dry-run` "
+        "and set the sidebar path to `outputs/demo/summary.json`."
+    )
     st.stop()
 
 data = json.loads(path.read_text(encoding="utf-8"))
