@@ -1,4 +1,4 @@
-from .admet import filter_admet
+from .admet import apply_admet
 from .docking import dock_batch
 from .libraries import prepare_library
 from .pockets import detect_pockets
@@ -12,6 +12,6 @@ __all__ = [
     "prepare_library",
     "dock_batch",
     "rescore_poses",
-    "filter_admet",
+    "apply_admet",
     "rank_and_export",
 ]
