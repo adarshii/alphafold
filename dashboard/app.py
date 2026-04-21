@@ -14,6 +14,16 @@ st.title("AlphaFold-guided virtual screening dashboard")
 PLACEHOLDER_VALUE = "N/A"
 
 
+def sort_hits_dataframe(df: pd.DataFrame, sort_col: str, ascending: bool) -> pd.DataFrame:
+    """Sort hit rows defensively when a column contains mixed/non-orderable values."""
+    try:
+        return df.sort_values(by=sort_col, ascending=ascending)
+    except TypeError:
+        return df.assign(
+            _sort_key=df[sort_col].map(lambda value: "" if value is None else str(value))
+        ).sort_values(by="_sort_key", ascending=ascending).drop(columns="_sort_key")
+
+
 def discover_summary_paths(root: Path) -> list[str]:
     candidates = sorted(root.glob("outputs/**/summary.json"))
     return [str(p) for p in candidates if p.is_file()]
@@ -122,7 +132,7 @@ if hits:
         default_ascending = sort_col in {"docking_score", "ml_rescore"}
         ascending = filters[2].toggle("Sort ascending", value=default_ascending)
 
-        filtered_df = hits_df.sort_values(by=sort_col, ascending=ascending).head(top_n)
+        filtered_df = sort_hits_dataframe(hits_df, sort_col, ascending).head(top_n)
         st.dataframe(filtered_df, width="stretch", hide_index=True)
 
         if {"docking_score", "ml_rescore"}.issubset(filtered_df.columns):
