@@ -6,11 +6,27 @@ from typing import Any
 
 
 def _toxicity_flags(smiles: str) -> dict[str, bool]:
-    lower = smiles.lower()
+    try:
+        from rdkit import Chem
+    except ImportError:
+        lower = smiles.lower()
+        return {
+            "nitro_alert": "[n+](=o)[o-]" in lower,
+            "aniline_alert": "nc1ccccc1" in lower,
+            "highly_halogenated": sum(lower.count(x) for x in ["cl", "br", "i"]) >= 4,
+        }
+
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return {"nitro_alert": False, "aniline_alert": False, "highly_halogenated": False}
+
+    nitro = Chem.MolFromSmarts("[NX3+](=O)[O-]")
+    aniline = Chem.MolFromSmarts("Nc1ccccc1")
+    halogen_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() in {"Cl", "Br", "I"})
     return {
-        "nitro_alert": "[n+](=o)[o-]" in lower or "no2" in lower,
-        "aniline_alert": "nc1ccccc1" in lower,
-        "highly_halogenated": sum(lower.count(x) for x in ["cl", "br", "i"]) >= 4,
+        "nitro_alert": bool(nitro and mol.HasSubstructMatch(nitro)),
+        "aniline_alert": bool(aniline and mol.HasSubstructMatch(aniline)),
+        "highly_halogenated": halogen_atoms >= 4,
     }
 
 
@@ -43,7 +59,16 @@ def apply_admet(compounds: list[dict[str, Any]], cfg: dict[str, Any], out_dir: P
     profiled: list[dict[str, Any]] = []
     for item in compounds:
         toxicity = _toxicity_flags(str(item["smiles"]))
-        violations = int(item["mw"] > thresholds["max_mw"]) + int(item["logp"] > thresholds["max_logp"]) + int(item["hbd"] > thresholds["max_hbd"]) + int(item["hba"] > thresholds["max_hba"]) + int(item["tpsa"] > thresholds["max_tpsa"]) + int(item["rotatable_bonds"] > thresholds["max_rotatable_bonds"])
+        violations = sum(
+            [
+                int(item["mw"] > thresholds["max_mw"]),
+                int(item["logp"] > thresholds["max_logp"]),
+                int(item["hbd"] > thresholds["max_hbd"]),
+                int(item["hba"] > thresholds["max_hba"]),
+                int(item["tpsa"] > thresholds["max_tpsa"]),
+                int(item["rotatable_bonds"] > thresholds["max_rotatable_bonds"]),
+            ]
+        )
 
         item["toxicity_flags"] = toxicity
         item["admet_violations"] = violations

@@ -67,7 +67,7 @@ def rescore_poses(
     y = np.asarray([int(c.get("label", 0)) for c in compounds], dtype=int)
 
     if dry_run or len(np.unique(y)) < 2:
-        probabilities = 1 / (1 + np.exp(X[:, 0]))
+        probabilities = np.full(shape=len(compounds), fill_value=0.5, dtype=float)
         for item, score in zip(compounds, probabilities, strict=True):
             item["ml_rescore"] = float(round(score, 6))
         artifacts = {
@@ -82,7 +82,10 @@ def rescore_poses(
     class_weight = cfg.get("class_weight", "balanced")
     model = lgbm_classifier(random_state=seed, class_weight=class_weight, n_estimators=200, learning_rate=0.05)
 
-    test_size = max(0.1, 1 - float(cfg.get("train_fraction", 0.8)))
+    train_fraction = float(cfg.get("train_fraction", 0.8))
+    if not 0.0 < train_fraction < 1.0:
+        raise ValueError("rescoring.train_fraction must be between 0 and 1 (exclusive).")
+    test_size = 1.0 - train_fraction
     X_train, X_test, y_train, y_test, train_idx, test_idx = train_test_split(
         X,
         y,
@@ -93,8 +96,13 @@ def rescore_poses(
     )
 
     cv_folds = int(cfg.get("cv_folds", 5))
-    cv = StratifiedKFold(n_splits=min(cv_folds, np.bincount(y_train).min()), shuffle=True, random_state=seed)
-    cv_scores = cross_val_score(model, X_train, y_train, cv=cv, scoring="roc_auc")
+    min_class_samples = int(np.bincount(y_train).min()) if len(y_train) > 0 else 0
+    n_splits = min(cv_folds, min_class_samples)
+    if n_splits >= 2:
+        cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=seed)
+        cv_scores = cross_val_score(model, X_train, y_train, cv=cv, scoring="roc_auc")
+    else:
+        cv_scores = np.asarray([float("nan")], dtype=float)
 
     model.fit(X_train, y_train)
     full_probs = model.predict_proba(X)[:, 1]
@@ -108,8 +116,13 @@ def rescore_poses(
     ef1 = float(_enrichment_factor_at_1_percent(y_test, test_probs))
     brier = float(brier_score_loss(y_test, test_probs))
 
-    prob_true, prob_pred = calibration_curve(y_test, test_probs, n_bins=10)
-    calibration = {"prob_true": prob_true.tolist(), "prob_pred": prob_pred.tolist()}
+    calibration = {"prob_true": [], "prob_pred": []}
+    try:
+        n_bins = max(2, min(10, len(y_test)))
+        prob_true, prob_pred = calibration_curve(y_test, test_probs, n_bins=n_bins)
+        calibration = {"prob_true": prob_true.tolist(), "prob_pred": prob_pred.tolist()}
+    except ValueError:
+        calibration = {"prob_true": [], "prob_pred": []}
 
     model_path = Path(cfg.get("save_model_path", model_dir / "lightgbm_rescorer.joblib"))
     if not model_path.is_absolute():
@@ -153,12 +166,12 @@ def _generate_shap_outputs(
     shap_dir.mkdir(parents=True, exist_ok=True)
 
     explainer = shap.TreeExplainer(model)
-    sample = X_train[: min(200, len(X_train))]
-    shap_values = explainer.shap_values(sample)
+    shap_sample = X_train[: min(200, len(X_train))]
+    shap_values = explainer.shap_values(shap_sample)
 
     summary_png = shap_dir / "shap_summary.png"
     plt.figure(figsize=(8, 5))
-    shap.summary_plot(shap_values, sample, feature_names=columns, show=False)
+    shap.summary_plot(shap_values, shap_sample, feature_names=columns, show=False)
     plt.tight_layout()
     plt.savefig(summary_png, dpi=200)
     plt.close()

@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 import random
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -21,13 +20,6 @@ from alphafold_vs_pipeline.stages import (
 )
 
 LOGGER = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class PipelineState:
-    structure: dict[str, Any] | None = None
-    pockets: list[dict[str, Any]] | None = None
-    compounds: list[dict[str, Any]] | None = None
 
 
 def _set_global_seed(seed: int) -> None:
@@ -50,20 +42,17 @@ def run_pipeline(
     seed = int(reproducibility_cfg.get("random_seed", 42))
     _set_global_seed(seed)
 
-    (out_dir / "run_config.yaml").write_text(json.dumps(config, indent=2), encoding="utf-8")
+    (out_dir / "run_config.json").write_text(json.dumps(config, indent=2), encoding="utf-8")
 
-    state = PipelineState()
     structure_info: dict[str, Any] = {}
     pockets: list[dict[str, Any]] = []
     compounds: list[dict[str, Any]] = []
 
     structure_info = prepare_structure(config["target"], out_dir=out_dir, dry_run=dry_run)
-    state = PipelineState(structure=structure_info)
     if stage == "structure":
         return _write_summary(config, out_dir, structure_info, pockets, compounds, dry_run, seed)
 
     pockets = detect_pockets(config["pocket_detection"], structure_info=structure_info, out_dir=out_dir, dry_run=dry_run)
-    state = PipelineState(structure=structure_info, pockets=pockets)
     if stage == "pockets":
         return _write_summary(config, out_dir, structure_info, pockets, compounds, dry_run, seed)
 
@@ -74,8 +63,8 @@ def run_pipeline(
     compounds = dock_batch(
         compounds,
         config["docking"],
-        structure_info=state.structure or structure_info,
-        pockets=state.pockets or pockets,
+        structure_info=structure_info,
+        pockets=pockets,
         out_dir=out_dir,
         dry_run=dry_run,
         seed=seed,
@@ -125,5 +114,5 @@ def _write_summary(
     }
     summary_path = out_dir / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    LOGGER.info("Summary written to %s", summary_path)
+    LOGGER.info("Summary Written to %s", summary_path)
     return summary

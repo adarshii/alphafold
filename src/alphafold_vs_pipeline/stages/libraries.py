@@ -79,7 +79,9 @@ def prepare_library(cfg: dict[str, Any], out_dir: Path, dry_run: bool = False, s
             if mol is None:
                 continue
             mol = chem.AddHs(mol)
-            all_chem.EmbedMolecule(mol, randomSeed=seed)
+            embedding_result = all_chem.EmbedMolecule(mol, randomSeed=seed)
+            if embedding_result != 0:
+                continue
             all_chem.UFFOptimizeMolecule(mol)
 
             descriptor_values = _compute_descriptors(descriptors, crippen, lipinski, rd_mol_descriptors, mol)

@@ -26,7 +26,7 @@ def rank_and_export(compounds: list[dict[str, Any]], cfg: dict[str, Any], output
             writer = csv.DictWriter(handle, fieldnames=fieldnames)
             writer.writeheader()
             for row in ranked:
-                writer.writerow({key: row.get(key) for key in fieldnames})
+                writer.writerow({key: row.get(key, "") for key in fieldnames})
 
     if cfg.get("export_sdf", True):
         sdf_path = output_dir / "hits.sdf"

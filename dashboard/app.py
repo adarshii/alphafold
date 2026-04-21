@@ -36,7 +36,16 @@ def load_summary(uploaded: Any, path_text: str) -> dict[str, Any]:
 
 def _show_radar_for_hit(hit: dict[str, Any]) -> None:
     categories = ["mw", "logp", "tpsa", "hbd", "hba", "drug_likeness_score"]
-    values = [float(hit.get(key, 0.0)) for key in categories]
+    raw_values = [float(hit.get(key, 0.0)) for key in categories]
+    limits = {
+        "mw": 500.0,
+        "logp": 5.0,
+        "tpsa": 140.0,
+        "hbd": 5.0,
+        "hba": 10.0,
+        "drug_likeness_score": 1.0,
+    }
+    values = [min(1.0, max(0.0, raw_values[i] / max(1e-6, limits[categories[i]]))) for i in range(len(categories))]
     values.append(values[0])
     theta = categories + [categories[0]]
     fig = go.Figure(data=go.Scatterpolar(r=values, theta=theta, fill="toself"))
@@ -110,7 +119,10 @@ st.header("ADMET Profile")
 if hits_df.empty:
     st.info("No ADMET profile available.")
 else:
-    top_hit = hits_df.sort_values("ml_rescore", ascending=False).iloc[0].to_dict() if "ml_rescore" in hits_df.columns else hits_df.iloc[0].to_dict()
+    if "ml_rescore" in hits_df.columns:
+        top_hit = hits_df.sort_values("ml_rescore", ascending=False).iloc[0].to_dict()
+    else:
+        top_hit = hits_df.iloc[0].to_dict()
     _show_radar_for_hit(top_hit)
 
 st.header("Ranking Table")

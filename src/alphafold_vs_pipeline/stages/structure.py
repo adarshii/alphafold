@@ -11,7 +11,7 @@ def prepare_structure(target_cfg: dict[str, Any], out_dir: Path, dry_run: bool =
         raise FileNotFoundError(f"Structure path does not exist: {structure_path}")
 
     copied_path = out_dir / "target_structure.pdb"
-    if structure_path.exists():
+    if not dry_run and structure_path.exists():
         shutil.copyfile(structure_path, copied_path)
 
     return {

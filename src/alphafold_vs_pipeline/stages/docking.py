@@ -7,6 +7,15 @@ from pathlib import Path
 from typing import Any
 
 
+def _safe_import_rdkit_for_docking() -> tuple[Any, Any]:
+    try:
+        from rdkit import Chem
+        from rdkit.Chem import AllChem
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError("RDKit is required to prepare ligand structures for docking.") from exc
+    return Chem, AllChem
+
+
 def _deterministic_score(compound_id: str, base: float = -6.0, spread: float = 4.0) -> float:
     digest = hashlib.sha256(compound_id.encode("utf-8")).hexdigest()
     fraction = int(digest[:8], 16) / 0xFFFFFFFF
@@ -14,19 +23,41 @@ def _deterministic_score(compound_id: str, base: float = -6.0, spread: float = 4
 
 
 def _prepare_ligand_pdbqt(smiles: str, ligand_id: str, out_dir: Path) -> Path:
+    chem, all_chem = _safe_import_rdkit_for_docking()
     sdf_path = out_dir / f"{ligand_id}.sdf"
     pdbqt_path = out_dir / f"{ligand_id}.pdbqt"
 
-    sdf_path.write_text(f"{smiles}\n", encoding="utf-8")
-    command = ["obabel", "-isdf", str(sdf_path), "-opdbqt", "-O", str(pdbqt_path), "--gen3d"]
-    subprocess.run(command, check=True, capture_output=True, text=True)
+    mol = chem.MolFromSmiles(smiles)
+    if mol is None:
+        raise RuntimeError(f"Invalid SMILES for ligand {ligand_id}: {smiles}")
+    mol = chem.AddHs(mol)
+    if all_chem.EmbedMolecule(mol, randomSeed=42) != 0:
+        raise RuntimeError(f"Failed to generate 3D conformer for ligand {ligand_id}")
+    all_chem.UFFOptimizeMolecule(mol)
+
+    writer = chem.SDWriter(str(sdf_path))
+    writer.write(mol)
+    writer.close()
+
+    command = ["obabel", "-isdf", str(sdf_path), "-opdbqt", "-O", str(pdbqt_path)]
+    try:
+        subprocess.run(command, check=True, capture_output=True, text=True)
+    except FileNotFoundError as exc:
+        raise RuntimeError("Open Babel (obabel) is required for ligand preparation and was not found.") from exc
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"Open Babel ligand preparation failed: {exc.stderr}") from exc
     return pdbqt_path
 
 
 def _prepare_protein_pdbqt(structure_path: str, out_dir: Path) -> Path:
     receptor_pdbqt = out_dir / "receptor.pdbqt"
     command = ["obabel", "-ipdb", structure_path, "-opdbqt", "-O", str(receptor_pdbqt)]
-    subprocess.run(command, check=True, capture_output=True, text=True)
+    try:
+        subprocess.run(command, check=True, capture_output=True, text=True)
+    except FileNotFoundError as exc:
+        raise RuntimeError("Open Babel (obabel) is required for receptor preparation and was not found.") from exc
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"Open Babel receptor preparation failed: {exc.stderr}") from exc
     return receptor_pdbqt
 
 
@@ -66,14 +97,22 @@ def _run_vina(
         "--out",
         str(out_pose),
     ]
-    result = subprocess.run(command, check=True, capture_output=True, text=True)
+    try:
+        result = subprocess.run(command, check=True, capture_output=True, text=True)
+    except FileNotFoundError as exc:
+        raise RuntimeError(f"{executable} is not installed or not in PATH.") from exc
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"{executable} docking failed: {exc.stderr}") from exc
 
     for line in result.stdout.splitlines():
         stripped = line.strip()
         if stripped.startswith("1 "):
             parts = stripped.split()
-            return float(parts[1])
-    raise RuntimeError("Unable to parse Vina affinity from output")
+            try:
+                return float(parts[1])
+            except (IndexError, ValueError) as exc:
+                raise RuntimeError(f"Failed to parse affinity from Vina output line: {stripped}") from exc
+    raise RuntimeError(f"Unable to parse Vina affinity from output: {result.stdout}")
 
 
 def dock_batch(

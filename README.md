@@ -79,7 +79,7 @@ Sections:
 Each run stores:
 
 - `summary.json`
-- `run_config.yaml` (serialized run configuration)
+- `run_config.json` (serialized run configuration)
 - `ml_metrics.json`
 - `admet_profile.json`
 - docking and model artifacts in output subdirectories
