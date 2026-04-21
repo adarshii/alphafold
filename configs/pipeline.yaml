@@ -1,6 +1,10 @@
 project:
   name: alphafold-vs-pipeline
-  version: v0.1.0
+  version: v0.2.0
+
+reproducibility:
+  random_seed: 42
+  run_name: demo_run
 
 target:
   name: SARS-CoV-2 Mpro
@@ -10,38 +14,52 @@ target:
   predictor: colabfold
 
 pocket_detection:
-  tools:
-    - fpocket
-    - dogsitescorer
-  top_n: 3
+  method: predefined
+  top_n: 1
+  predefined_boxes:
+    - id: P1
+      source: catalytic_site
+      center: [ -10.5, 12.8, 68.3 ]
+      size: [ 20.0, 20.0, 20.0 ]
 
 library:
-  actives_source: chembl
-  decoys_source: zinc15
-  zinc_decoy_count: 10000
+  input_csv: data/benchmark/demo_benchmark.csv
+  smiles_column: smiles
+  id_column: compound_id
+  label_column: label
+  max_compounds: 500
+  generate_3d: true
+
+benchmark:
+  enabled: true
+  dataset_name: demo_benchmark
 
 docking:
   engine: vina
-  alternatives:
-    - smina
-    - gnina
+  executable: vina
   exhaustiveness: 8
   num_modes: 10
+  cpu: 2
+  protein_pdbqt: null
+  keep_poses: true
 
 rescoring:
   model_type: lightgbm
-  feature_set: rf_score_plus_custom
-  model_path: models/lightgbm_rescorer.txt
+  train_fraction: 0.8
+  cv_folds: 5
+  class_weight: balanced
+  save_model_path: models/lightgbm_rescorer.joblib
+  perform_shap: true
 
 admet:
+  apply_filters: true
   max_mw: 500
   max_logp: 5
   max_hbd: 5
   max_hba: 10
-  pains_filter: true
-  external_tools:
-    - swissadme
-    - pkcsm
+  max_tpsa: 140
+  max_rotatable_bonds: 10
+  max_violations: 1
 
 ranking:
   top_k: 100
