@@ -11,11 +11,47 @@ import streamlit as st
 
 st.set_page_config(page_title="alphafold-vs-pipeline", layout="wide")
 st.title("AlphaFold-guided virtual screening dashboard")
+PLACEHOLDER_VALUE = "N/A"
 
 
 def discover_summary_paths(root: Path) -> list[str]:
     candidates = sorted(root.glob("outputs/**/summary.json"))
     return [str(p) for p in candidates if p.is_file()]
+
+
+def normalize_summary_data(raw_data: Any) -> dict[str, Any]:
+    """Normalize uploaded/loaded JSON into a dashboard-compatible summary dict.
+
+    Accepts either:
+    - a summary object (dict), where missing/non-list `hits` and `pockets` are coerced to lists
+    - a list of hit objects, wrapped into a minimal summary payload
+
+    Returns:
+        dict[str, Any]: Normalized summary payload with at least `target`, `target_pdb_id`,
+        `pockets`, and `hits`; includes `mode` for list-based uploaded hit payloads.
+
+    Raises:
+        ValueError: If the JSON shape is neither a summary object nor a list of hit objects.
+    """
+    if isinstance(raw_data, dict):
+        normalized = dict(raw_data)
+        if not isinstance(normalized.get("hits"), list):
+            normalized["hits"] = []
+        if not isinstance(normalized.get("pockets"), list):
+            normalized["pockets"] = []
+        return normalized
+    # Intentionally validate every row so downstream table/plot code only sees dict-like hit records.
+    if isinstance(raw_data, list) and all(isinstance(item, dict) for item in raw_data):
+        return {
+            "target": PLACEHOLDER_VALUE,
+            "target_pdb_id": PLACEHOLDER_VALUE,
+            # Keep structure key present to match summary.json shape used across the app/docs.
+            "structure": {},
+            "pockets": [],
+            "hits": raw_data,
+            "mode": "uploaded-hits-only",
+        }
+    raise ValueError("Unsupported JSON format. Upload a summary object or a list of hit objects.")
 
 
 repo_root = Path.cwd()
@@ -32,8 +68,9 @@ summary_path = st.sidebar.selectbox(
 manual_path = st.sidebar.text_input("Or enter summary JSON path", summary_path)
 
 data: dict[str, Any]
+raw_data: Any
 if uploaded_file is not None:
-    data = json.load(uploaded_file)
+    raw_data = json.load(uploaded_file)
 else:
     path = Path(manual_path.strip())
     if not manual_path.strip() or not path.exists():
@@ -43,18 +80,24 @@ else:
             "then use `outputs/run_01/summary.json`."
         )
         st.stop()
-    data = json.loads(path.read_text(encoding="utf-8"))
+    raw_data = json.loads(path.read_text(encoding="utf-8"))
+
+try:
+    data = normalize_summary_data(raw_data)
+except ValueError as exc:
+    st.error(str(exc))
+    st.stop()
 
 hits = data.get("hits", [])
 pockets = data.get("pockets", [])
 
 st.subheader("Run summary")
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Target", str(data.get("target", "N/A")))
-col2.metric("PDB ID", str(data.get("target_pdb_id", "N/A")))
+col1.metric("Target", str(data.get("target", PLACEHOLDER_VALUE)))
+col2.metric("PDB ID", str(data.get("target_pdb_id", PLACEHOLDER_VALUE)))
 col3.metric("Pocket count", len(pockets))
 col4.metric("Hit count", len(hits))
-st.caption(f"Run mode: {data.get('mode', 'N/A')}")
+st.caption(f"Run mode: {data.get('mode', PLACEHOLDER_VALUE)}")
 
 if pockets:
     st.subheader("Pocket summary")
