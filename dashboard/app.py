@@ -18,16 +18,17 @@ def sort_hits_dataframe(df: pd.DataFrame, sort_col: str, ascending: bool) -> pd.
     """Sort hit rows and fallback to string ordering for mixed/non-orderable values.
 
     If `sort_values` raises ``TypeError`` (for example, when a sort column mixes
-    incomparable scalar types), values are converted into a temporary string key
-    while preserving missing values (`None`, `NaN`, `NaT`) as empty strings.
-    The helper key column is removed before returning the sorted dataframe.
+    incomparable scalar types), values are converted to normalized string keys
+    (`None`/`NaN`/`NaT` become empty strings) via the `key` callback.
     """
     try:
         return df.sort_values(by=sort_col, ascending=ascending)
     except TypeError:
-        return df.assign(
-            _sort_key=df[sort_col].map(lambda value: "" if pd.isna(value) else str(value))
-        ).sort_values(by="_sort_key", ascending=ascending).drop(columns="_sort_key")
+        return df.sort_values(
+            by=sort_col,
+            ascending=ascending,
+            key=lambda column: column.map(lambda value: "" if pd.isna(value) else str(value)),
+        )
 
 
 def discover_summary_paths(root: Path) -> list[str]:
