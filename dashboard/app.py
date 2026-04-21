@@ -15,12 +15,18 @@ PLACEHOLDER_VALUE = "N/A"
 
 
 def sort_hits_dataframe(df: pd.DataFrame, sort_col: str, ascending: bool) -> pd.DataFrame:
-    """Sort hit rows defensively when a column contains mixed/non-orderable values."""
+    """Sort hit rows and fallback to string ordering for mixed/non-orderable values.
+
+    If `sort_values` raises ``TypeError`` (for example, when a sort column mixes
+    incomparable scalar types), values are converted into a temporary string key
+    while preserving missing values (`None`, `NaN`, `NaT`) as empty strings.
+    The helper key column is removed before returning the sorted dataframe.
+    """
     try:
         return df.sort_values(by=sort_col, ascending=ascending)
     except TypeError:
         return df.assign(
-            _sort_key=df[sort_col].map(lambda value: "" if value is None else str(value))
+            _sort_key=df[sort_col].map(lambda value: "" if pd.isna(value) else str(value))
         ).sort_values(by="_sort_key", ascending=ascending).drop(columns="_sort_key")
 
 
