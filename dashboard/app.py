@@ -108,7 +108,7 @@ if pockets:
 if hits:
     hits_df = pd.json_normalize(hits)
     st.subheader("Interactive hit database")
-    if hits_df.empty or not list(hits_df.columns):
+    if hits_df.empty:
         st.info("No tabular hit rows are available to display.")
     else:
         sortable_columns = list(hits_df.columns)
