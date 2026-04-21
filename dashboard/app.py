@@ -133,7 +133,12 @@ if hits:
         rank_col = "ml_rescore" if "ml_rescore" in hits_df.columns else None
 
         filters = st.columns(3)
-        top_n = filters[0].slider("Rows to display", min_value=1, max_value=len(hits_df), value=min(25, len(hits_df)))
+        row_count = len(hits_df)
+        if row_count == 1:
+            top_n = 1
+            filters[0].caption("Rows to display: 1")
+        else:
+            top_n = filters[0].slider("Rows to display", min_value=1, max_value=row_count, value=min(25, row_count))
         sort_col_default = score_col if score_col else sortable_columns[0]
         sort_col = filters[1].selectbox("Sort by", sortable_columns, index=sortable_columns.index(sort_col_default))
         default_ascending = sort_col in {"docking_score", "ml_rescore"}
