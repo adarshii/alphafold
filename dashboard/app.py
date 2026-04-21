@@ -15,7 +15,7 @@ PLACEHOLDER_VALUE = "N/A"
 
 
 def sort_hits_dataframe(df: pd.DataFrame, sort_col: str, ascending: bool) -> pd.DataFrame:
-    """Sort hit rows and fallback to string ordering for mixed/non-orderable values.
+    """Sort hit rows and fall back to string ordering for mixed/non-orderable values.
 
     If `sort_values` raises ``TypeError`` (for example, when a sort column mixes
     incomparable scalar types), values are converted to normalized string keys
@@ -27,7 +27,7 @@ def sort_hits_dataframe(df: pd.DataFrame, sort_col: str, ascending: bool) -> pd.
         return df.sort_values(
             by=sort_col,
             ascending=ascending,
-            key=lambda column: column.map(lambda value: "" if pd.isna(value) else str(value)),
+            key=lambda column: column.fillna("").astype(str),
         )
 
 
