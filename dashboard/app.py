@@ -35,7 +35,9 @@ def normalize_summary_data(raw_data: Any) -> dict[str, Any]:
     """
     if isinstance(raw_data, dict):
         normalized = dict(raw_data)
-        if not isinstance(normalized.get("hits"), list):
+        if isinstance(normalized.get("hits"), list):
+            normalized["hits"] = [item for item in normalized["hits"] if isinstance(item, dict)]
+        else:
             normalized["hits"] = []
         if not isinstance(normalized.get("pockets"), list):
             normalized["pockets"] = []
@@ -106,35 +108,38 @@ if pockets:
 if hits:
     hits_df = pd.json_normalize(hits)
     st.subheader("Interactive hit database")
-    sortable_columns = list(hits_df.columns)
-    score_col = "docking_score" if "docking_score" in hits_df.columns else None
-    rank_col = "ml_rescore" if "ml_rescore" in hits_df.columns else None
-
-    filters = st.columns(3)
-    top_n = filters[0].slider("Rows to display", min_value=1, max_value=len(hits_df), value=min(25, len(hits_df)))
-    sort_col_default = score_col if score_col else sortable_columns[0]
-    sort_col = filters[1].selectbox("Sort by", sortable_columns, index=sortable_columns.index(sort_col_default))
-    default_ascending = sort_col in {"docking_score", "ml_rescore"}
-    ascending = filters[2].toggle("Sort ascending", value=default_ascending)
-
-    filtered_df = hits_df.sort_values(by=sort_col, ascending=ascending).head(top_n)
-    st.dataframe(filtered_df, width="stretch", hide_index=True)
-
-    if {"docking_score", "ml_rescore"}.issubset(filtered_df.columns):
-        fig = px.scatter_3d(
-            filtered_df,
-            x="docking_score",
-            y="ml_rescore",
-            z=list(range(1, len(filtered_df) + 1)),
-            hover_name="compound_id",
-            title="Pose ranking (3D view)",
-        )
-        fig.update_layout(autosize=True)
-        st.plotly_chart(fig)
+    if hits_df.empty or not list(hits_df.columns):
+        st.info("No tabular hit rows are available to display.")
     else:
-        st.info("3D ranking view requires `docking_score` and `ml_rescore` columns.")
-    st.download_button(
-        "Download filtered hits (JSON)",
-        data=json.dumps(filtered_df.to_dict(orient="records"), indent=2),
-        file_name="hits.json",
-    )
+        sortable_columns = list(hits_df.columns)
+        score_col = "docking_score" if "docking_score" in hits_df.columns else None
+        rank_col = "ml_rescore" if "ml_rescore" in hits_df.columns else None
+
+        filters = st.columns(3)
+        top_n = filters[0].slider("Rows to display", min_value=1, max_value=len(hits_df), value=min(25, len(hits_df)))
+        sort_col_default = score_col if score_col else sortable_columns[0]
+        sort_col = filters[1].selectbox("Sort by", sortable_columns, index=sortable_columns.index(sort_col_default))
+        default_ascending = sort_col in {"docking_score", "ml_rescore"}
+        ascending = filters[2].toggle("Sort ascending", value=default_ascending)
+
+        filtered_df = hits_df.sort_values(by=sort_col, ascending=ascending).head(top_n)
+        st.dataframe(filtered_df, width="stretch", hide_index=True)
+
+        if {"docking_score", "ml_rescore"}.issubset(filtered_df.columns):
+            fig = px.scatter_3d(
+                filtered_df,
+                x="docking_score",
+                y="ml_rescore",
+                z=list(range(1, len(filtered_df) + 1)),
+                hover_name="compound_id",
+                title="Pose ranking (3D view)",
+            )
+            fig.update_layout(autosize=True)
+            st.plotly_chart(fig)
+        else:
+            st.info("3D ranking view requires `docking_score` and `ml_rescore` columns.")
+        st.download_button(
+            "Download filtered hits (JSON)",
+            data=json.dumps(filtered_df.to_dict(orient="records"), indent=2),
+            file_name="hits.json",
+        )
